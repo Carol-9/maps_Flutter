@@ -21,7 +21,6 @@ Aplicativo de mapas em Flutter utilizando **OpenStreetMap**. Permite:
 - [provider](https://pub.dev/packages/provider)  
 - [geolocator](https://pub.dev/packages/geolocator)  
 - [geocoding](https://pub.dev/packages/geocoding)  
-- [battery_plus](https://pub.dev/packages/battery_plus)  
 
 ## Como rodar
 

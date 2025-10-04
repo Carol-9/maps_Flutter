@@ -1,0 +1,110 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/location_viewmodel.dart';
+import 'package:geocoding/geocoding.dart';
+
+class MapView extends StatefulWidget {
+  const MapView({super.key});
+
+  @override
+  State<MapView> createState() => _MapViewState();
+}
+
+class _MapViewState extends State<MapView> {
+  final TextEditingController _searchController = TextEditingController();
+
+  Future<void> _searchLocation(LocationViewModel viewModel) async {
+    final query = _searchController.text;
+    if (query.isEmpty) return;
+
+    try {
+      List<Location> locations = await locationFromAddress(query);
+      if (locations.isNotEmpty) {
+        final loc = locations.first;
+        viewModel.updateLocation(loc.latitude, loc.longitude); // você precisa ter esse método no ViewModel
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Endereço não encontrado')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<LocationViewModel>(
+      builder: (context, viewModel, child) {
+        if (viewModel.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final location = viewModel.location;
+
+        if (location == null) {
+          return const Center(
+            child: Text('Não foi possível obter a localização.'),
+          );
+        }
+
+        return Column(
+          children: [
+            // Barra de busca
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        hintText: 'Digite um endereço',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.search),
+                    onPressed: () => _searchLocation(viewModel),
+                  ),
+                ],
+              ),
+            ),
+            // Mapa
+            Expanded(
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: LatLng(location.latitude, location.longitude),
+                  initialZoom: 16,
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    subdomains: const ['a', 'b', 'c'],
+                    userAgentPackageName: 'br.edu.ifsul.flutter_mapas_osm',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: LatLng(location.latitude, location.longitude),
+                        width: 40,
+                        height: 40,
+                        child: const Icon(
+                          Icons.location_pin,
+                          color: Colors.red,
+                          size: 40,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
